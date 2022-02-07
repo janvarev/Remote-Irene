@@ -1,0 +1,4 @@
+vosk~=0.3.7
+sounddevice
+soundfile
+requests
