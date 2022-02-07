@@ -8,11 +8,19 @@
 import speech_recognition
 import os
 
-# main option
-ttsFormat = "saywav" # "none" (TTS on server) or "saytxt" (TTS on client)
-                    # or "saywav" (TTS on server to WAV, Wav played on client)
-recognizeFormat = "vosk" # "google" or "vosk" or "ireneserver"
-baseUrl = "http://127.0.0.1:5003/" # server with Irene WEB api
+import json
+
+# main options
+with open('options.json', 'r', encoding="utf-8") as f:
+    s = f.read(10000000)
+    f.close()
+saved_options = json.loads(s)
+
+ttsFormat = saved_options["ttsFormat"] # "none" (TTS on server) or "saytxt" (TTS on client)
+                            # or "saywav" (TTS on server to WAV, Wav played on client)
+baseUrl = saved_options["baseUrl"] # server with Irene WEB api
+
+recognizeFormat = "vosk" # "google" or "vosk"
 
 if recognizeFormat == "vosk":
     # проверка наличия модели на нужном языке в каталоге приложения

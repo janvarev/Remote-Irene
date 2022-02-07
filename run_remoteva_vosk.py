@@ -8,10 +8,34 @@ import sys
 import requests
 import json
 
-# main option
-ttsFormat = "saywav" # "none" (TTS on server) or "saytxt" (TTS on client)
+import play_wav
+
+version="1.0"
+
+# main options
+with open('options.json', 'r', encoding="utf-8") as f:
+    s = f.read(10000000)
+    f.close()
+saved_options = json.loads(s)
+
+ttsFormat = saved_options["ttsFormat"] # "none" (TTS on server) or "saytxt" (TTS on client)
                     # or "saywav" (TTS on server to WAV, Wav played on client)
-baseUrl = "http://127.0.0.1:5003/" # server with Irene WEB api
+baseUrl = saved_options["baseUrl"] # server with Irene WEB api
+
+if os.path.exists("error_connection.wav"):
+    pass
+else: # первый вызов, давайте получим файлы
+    print("Получаем WAV-файлы, которые будут играться в случае ошибок...")
+
+    r = requests.get(baseUrl+"ttsWav", params={"text": "Ошибка: потеряна связь с сервером"})
+    res = json.loads(r.text)
+    play_wav.saywav_to_file(res,'error_connection.wav')
+
+    r = requests.get(baseUrl+"ttsWav", params={"text": "Ошибка при обработке результата сервера"})
+    res = json.loads(r.text)
+    play_wav.saywav_to_file(res,'error_processing.wav')
+
+    print("WAV-файлы для ошибок получены!")
 
 
 if ttsFormat == "saytxt":
@@ -89,6 +113,7 @@ if __name__ == "__main__":
             dump_fn = None
 
 
+        print("Remote Irene (VOSK) v{0} started! ttsFormat={1}, baseUrl={2}".format(version,ttsFormat,baseUrl))
 
         with sd.RawInputStream(samplerate=args.samplerate, blocksize = 8000, device=args.device, dtype='int16',
                                channels=1, callback=callback):
@@ -115,35 +140,30 @@ if __name__ == "__main__":
                     if voice_input_str != "" and voice_input_str != None:
                         print(voice_input_str)
 
-                        if ttsFormat == "none":
-                            # for TTS on server
-                            r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "none"})
+                        try:
+                            if ttsFormat == "none":
+                                # for TTS on server
+                                r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "none"})
 
-                        if ttsFormat == "saytxt":
-                            # for TTS on client
-                            r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "saytxt"})
-                            res = json.loads(r.text)
-                            if res != "NO_VA_NAME": # some cmd was run
-                                ttsEngine.say(res)
-                                ttsEngine.runAndWait()
+                            if ttsFormat == "saytxt":
+                                # for TTS on client
+                                r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "saytxt"})
+                                res = json.loads(r.text)
+                                if res != "NO_VA_NAME": # some cmd was run
+                                    ttsEngine.say(res)
+                                    ttsEngine.runAndWait()
 
-                        if ttsFormat == "saywav":
-                            # (TTS on server to WAV, Wav played on client)
-                            r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "saywav"})
-                            res = json.loads(r.text)
-                            if res != "NO_VA_NAME": # some cmd was run
-                                b64 = res["wav_base64"]
-                                base64_message = b64.encode('utf-8')
-
-                                import base64
-
-                                with open('tmpfile.wav', 'wb') as file_to_save:
-                                    decoded_image_data = base64.decodebytes(base64_message)
-                                    file_to_save.write(decoded_image_data)
-
-                                from play_wav import play_wav
-                                play_wav('tmpfile.wav')
-
+                            if ttsFormat == "saywav":
+                                # (TTS on server to WAV, Wav played on client)
+                                r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "saywav"})
+                                res = json.loads(r.text)
+                                if res != "NO_VA_NAME": # some cmd was run
+                                    play_wav.saywav_to_file(res,'tmpfile.wav')
+                                    play_wav.play_wav('tmpfile.wav')
+                        except requests.ConnectionError as e:
+                            play_wav.play_wav('error_connection.wav')
+                        except Exception as e:
+                            play_wav.play_wav('error_processing.wav')
 
                     else:
                         #print("2",rec.PartialResult())
