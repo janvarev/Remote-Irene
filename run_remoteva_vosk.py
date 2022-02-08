@@ -10,7 +10,7 @@ import json
 
 import play_wav
 
-version="1.0"
+version="1.1"
 
 # main options
 with open('options.json', 'r', encoding="utf-8") as f:
@@ -113,7 +113,7 @@ if __name__ == "__main__":
             dump_fn = None
 
 
-        print("Remote Irene (VOSK) v{0} started! ttsFormat={1}, baseUrl={2}".format(version,ttsFormat,baseUrl))
+        print("Remote Irene (VOSK local recognizer) v{0} started! ttsFormat={1}, baseUrl={2}".format(version,ttsFormat,baseUrl))
 
         with sd.RawInputStream(samplerate=args.samplerate, blocksize = 8000, device=args.device, dtype='int16',
                                channels=1, callback=callback):
@@ -150,16 +150,18 @@ if __name__ == "__main__":
                                 r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "saytxt"})
                                 res = json.loads(r.text)
                                 if res != "NO_VA_NAME": # some cmd was run
-                                    ttsEngine.say(res)
-                                    ttsEngine.runAndWait()
+                                    if res != None and res != "": # there is some responce to play
+                                        ttsEngine.say(res)
+                                        ttsEngine.runAndWait()
 
                             if ttsFormat == "saywav":
                                 # (TTS on server to WAV, Wav played on client)
                                 r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "saywav"})
                                 res = json.loads(r.text)
                                 if res != "NO_VA_NAME": # some cmd was run
-                                    play_wav.saywav_to_file(res,'tmpfile.wav')
-                                    play_wav.play_wav('tmpfile.wav')
+                                    if res != None and res != "": # there is some responce to play
+                                        play_wav.saywav_to_file(res,'tmpfile.wav')
+                                        play_wav.play_wav('tmpfile.wav')
                         except requests.ConnectionError as e:
                             play_wav.play_wav('error_connection.wav')
                         except Exception as e:

@@ -45,5 +45,5 @@ baseUrl = "http://127.0.0.1:5003/"
 Потребуется отредактировать опцию vosk, настроив источник на вашу Python-установку 
 (чтобы скопировать библиотеку, без неё не заработает)
 
-[Скачать собранную версию 1.0 в EXE](https://download.janvarev.ru/vairene/run_remoteva_vosk10.rar)
+[Скачать собранную версию 1.1 в EXE](https://download.janvarev.ru/vairene/run_remoteva_vosk11.rar)
 
