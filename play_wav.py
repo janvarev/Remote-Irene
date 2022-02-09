@@ -1,8 +1,9 @@
 import os
-import soundfile as sound_file
-import sounddevice as sound_device
 
 def play_wav(wavfile):
+    import soundfile as sound_file
+    import sounddevice as sound_device
+
     filename = os.path.dirname(__file__)+"/"+wavfile
 
     #filename = 'timer/Sounds/Loud beep.wav'
