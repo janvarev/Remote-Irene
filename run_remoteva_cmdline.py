@@ -18,7 +18,12 @@ import json
 
 import requests
 
-import play_wav
+isPlayWav = False
+try:
+    import play_wav
+except Exception:
+    print("Ошибка: импорта play_wav, не сможем играть WAV-файлы. Переходим на заглушку.")
+    import play_wav_dummy as play_wav
 
 version="1.1"
 
@@ -35,24 +40,32 @@ baseUrl = saved_options["baseUrl"] # server with Irene WEB api
 if os.path.exists("error_connection.wav"):
     pass
 else: # первый вызов, давайте получим файлы
-    print("Получаем WAV-файлы, которые будут играться в случае ошибок...")
+    try:
+        print("Получаем WAV-файлы, которые будут играться в случае ошибок...")
 
-    r = requests.get(baseUrl+"ttsWav", params={"text": "Ошибка: потеряна связь с сервером"})
-    res = json.loads(r.text)
-    play_wav.saywav_to_file(res,'error_connection.wav')
+        r = requests.get(baseUrl+"ttsWav", params={"text": "Ошибка: потеряна связь с сервером"})
+        res = json.loads(r.text)
+        play_wav.saywav_to_file(res,'error_connection.wav')
 
-    r = requests.get(baseUrl+"ttsWav", params={"text": "Ошибка при обработке результата сервера"})
-    res = json.loads(r.text)
-    play_wav.saywav_to_file(res,'error_processing.wav')
+        r = requests.get(baseUrl+"ttsWav", params={"text": "Ошибка при обработке результата сервера"})
+        res = json.loads(r.text)
+        play_wav.saywav_to_file(res,'error_processing.wav')
 
-    print("WAV-файлы для ошибок получены!")
-
+        print("WAV-файлы для ошибок получены!")
+    except:
+        print("Ошибка при получении файлов. Пропускаем.")
 
 if ttsFormat == "saytxt":
-    import pyttsx3
-    ttsEngine = pyttsx3.init()
-    voices = ttsEngine.getProperty("voices")
-    ttsEngine.setProperty("voice", 0)
+    ttsInited = False
+    try:
+        import pyttsx3
+        ttsEngine = pyttsx3.init()
+        voices = ttsEngine.getProperty("voices")
+        ttsEngine.setProperty("voice", 0)
+        ttsInited = True
+    except Exception:
+        print("Ошибка: инициализации pyttsx3, не сможем озвучивать вывод. Переходим на заглушку.")
+        ttsInited = False
 
 if __name__ == "__main__":
 
@@ -78,8 +91,12 @@ if __name__ == "__main__":
                         res = json.loads(r.text)
                         if res != "NO_VA_NAME": # some cmd was run
                             if res != None and res != "": # there is some response to play
-                                ttsEngine.say(res)
-                                ttsEngine.runAndWait()
+                                print("ОТВЕТ: "+res)
+                                if ttsInited:
+                                    ttsEngine.say(res)
+                                    ttsEngine.runAndWait()
+
+
 
                     if ttsFormat == "saywav":
                         # (TTS on server to WAV, Wav played on client)
