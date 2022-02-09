@@ -1,13 +1,14 @@
 """
 Абсолютно минимальный вариант для удаленного управления Ириной через командную строку
-Требует только ```pip install requests```
+Только на нативных функциях Python
+(требует файл pysimpleurl.py для GET-запросов, может быть заменен на requests, пример в run_remoteva_cmdline.py)
 Может быть собран с помощью auto-py-to-exe в один файл.
 """
 import json
 
-import requests
+from pysimpleurl import request
 
-version="1.2"
+version="1.3"
 
 # ---------- main options -------------
 with open('options.json', 'r', encoding="utf-8") as f:
@@ -31,15 +32,15 @@ if __name__ == "__main__":
             break
         if cmd != "" and cmd != None:
             try:
-                r = requests.get(baseUrl+"sendTxtCmd", params={"cmd": cmd, "returnFormat": ttsFormat})
-                if r.text != "":
-                    res = json.loads(r.text)
-                    if res != None and res != "": # there is some response to play
-                        print("ОТВЕТ: "+res)
-
-            except requests.ConnectionError as e:
-                print("Ошибка связи с сервером")
+                r = request(baseUrl+"sendTxtCmd", params={"cmd": cmd, "returnFormat": ttsFormat})
+                if r.status == 200:
+                    if r.body != "":
+                        res = json.loads(r.body)
+                        if res != None and res != "": # there is some response to play
+                            print("ОТВЕТ: "+res)
+                else:
+                    print("Ошибка: статус не 200")
             except Exception as e:
-                print("Ошибка обработка результата")
+                print("Ошибка связи с сервером (вероятно) или обработки результата")
 
 
