@@ -25,7 +25,7 @@ except Exception:
     print("Ошибка: импорта play_wav, не сможем играть WAV-файлы. Переходим на заглушку.")
     import play_wav_dummy as play_wav
 
-version="1.1"
+version="1.2"
 
 # main options
 with open('options.json', 'r', encoding="utf-8") as f:
