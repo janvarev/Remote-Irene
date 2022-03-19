@@ -9,6 +9,8 @@ import speech_recognition
 import os
 
 import json
+import requests
+import play_wav
 
 # main options
 with open('options.json', 'r', encoding="utf-8") as f:
@@ -18,7 +20,32 @@ saved_options = json.loads(s)
 
 ttsFormat = saved_options["ttsFormat"] # "none" (TTS on server) or "saytxt" (TTS on client)
                             # or "saywav" (TTS on server to WAV, Wav played on client)
+ttsFormatList = ttsFormat.split(",")
 baseUrl = saved_options["baseUrl"] # server with Irene WEB api
+
+# pyttsx for saytxt
+if "saytxt" in ttsFormatList:
+    import pyttsx3
+    ttsEngine = pyttsx3.init()
+    voices = ttsEngine.getProperty("voices")
+    ttsEngine.setProperty("voice", 0)
+
+
+if os.path.exists("error_connection.wav"):
+    pass
+else: # первый вызов, давайте получим файлы
+    print("Получаем WAV-файлы, которые будут играться в случае ошибок...")
+
+    r = requests.get(baseUrl+"ttsWav", params={"text": "Ошибка: потеряна связь с сервером"})
+    res = json.loads(r.text)
+    play_wav.saywav_to_file(res,'error_connection.wav')
+
+    r = requests.get(baseUrl+"ttsWav", params={"text": "Ошибка при обработке результата сервера"})
+    res = json.loads(r.text)
+    play_wav.saywav_to_file(res,'error_processing.wav')
+
+    print("WAV-файлы для ошибок получены!")
+
 
 recognizeFormat = "vosk" # "google" or "vosk"
 
@@ -101,7 +128,6 @@ def use_vosk_recognition():
     return recognized_data
 
 # ------------------- vosk ------------------
-import requests
 import json
 
 
@@ -130,31 +156,26 @@ if __name__ == "__main__":
         if voice_input_str != "" and voice_input_str != None:
             print(voice_input_str)
 
-            if ttsFormat == "none":
-                # for TTS on server
-                r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "none"})
+            try:
+                r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": ttsFormat})
+                if r.text != "":
+                    res = json.loads(r.text)
+                    if res != "NO_VA_NAME": # some cmd was run
+                        if res != None and res != "": # there is some response to play
+                            if "saytxt" in ttsFormatList:
+                                if "restxt" in res.keys():
+                                    ttsEngine.say(res["restxt"])
+                                    ttsEngine.runAndWait()
 
-            if ttsFormat == "saytxt":
-                # for TTS on client
-                r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "saytxt"})
-                res = json.loads(r.text)
-                if res != "NO_VA_NAME": # some cmd was run
-                    ttsEngine.say(res)
-                    ttsEngine.runAndWait()
+                            if "saywav" in ttsFormatList:
+                                play_wav.saywav_to_file(res,'tmpfile.wav')
+                                play_wav.play_wav('tmpfile.wav')
 
-            if ttsFormat == "saywav":
-                # (TTS on server to WAV, Wav played on client)
-                r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "saywav"})
-                res = json.loads(r.text)
-                if res != "NO_VA_NAME": # some cmd was run
-                    b64 = res["wav_base64"]
-                    base64_message = b64.encode('utf-8')
+            except requests.ConnectionError as e:
+                play_wav.play_wav('error_connection.wav')
+            except Exception as e:
+                play_wav.play_wav('error_processing.wav')
 
-                    import base64
-
-                    with open('tmpfile.wav', 'wb') as file_to_save:
-                        decoded_image_data = base64.decodebytes(base64_message)
-                        file_to_save.write(decoded_image_data)
-
-                    from play_wav import play_wav
-                    play_wav('tmpfile.wav')
+        else:
+            #print("2",rec.PartialResult())
+            pass

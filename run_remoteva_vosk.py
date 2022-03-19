@@ -10,7 +10,7 @@ import json
 
 import play_wav
 
-version="1.1"
+version="1.2"
 
 # main options
 with open('options.json', 'r', encoding="utf-8") as f:
@@ -20,6 +20,8 @@ saved_options = json.loads(s)
 
 ttsFormat = saved_options["ttsFormat"] # "none" (TTS on server) or "saytxt" (TTS on client)
                     # or "saywav" (TTS on server to WAV, Wav played on client)
+                    # or mix of the params, splitted by , = "none,saytxt" as example
+ttsFormatList = ttsFormat.split(",")
 baseUrl = saved_options["baseUrl"] # server with Irene WEB api
 
 if os.path.exists("error_connection.wav"):
@@ -38,7 +40,7 @@ else: # первый вызов, давайте получим файлы
     print("WAV-файлы для ошибок получены!")
 
 
-if ttsFormat == "saytxt":
+if "saytxt" in ttsFormatList:
     import pyttsx3
     ttsEngine = pyttsx3.init()
     voices = ttsEngine.getProperty("voices")
@@ -141,27 +143,20 @@ if __name__ == "__main__":
                         print(voice_input_str)
 
                         try:
-                            if ttsFormat == "none":
-                                # for TTS on server
-                                r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "none"})
-
-                            if ttsFormat == "saytxt":
-                                # for TTS on client
-                                r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "saytxt"})
+                            r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": ttsFormat})
+                            if r.text != "":
                                 res = json.loads(r.text)
                                 if res != "NO_VA_NAME": # some cmd was run
-                                    if res != None and res != "": # there is some responce to play
-                                        ttsEngine.say(res)
-                                        ttsEngine.runAndWait()
+                                    if res != None and res != "": # there is some response to play
+                                        if "saytxt" in ttsFormatList:
+                                            if "restxt" in res.keys():
+                                                ttsEngine.say(res["restxt"])
+                                                ttsEngine.runAndWait()
 
-                            if ttsFormat == "saywav":
-                                # (TTS on server to WAV, Wav played on client)
-                                r = requests.get(baseUrl+"sendRawTxt", params={"rawtxt": voice_input_str, "returnFormat": "saywav"})
-                                res = json.loads(r.text)
-                                if res != "NO_VA_NAME": # some cmd was run
-                                    if res != None and res != "": # there is some responce to play
-                                        play_wav.saywav_to_file(res,'tmpfile.wav')
-                                        play_wav.play_wav('tmpfile.wav')
+                                        if "saywav" in ttsFormatList:
+                                            play_wav.saywav_to_file(res,'tmpfile.wav')
+                                            play_wav.play_wav('tmpfile.wav')
+
                         except requests.ConnectionError as e:
                             play_wav.play_wav('error_connection.wav')
                         except Exception as e:

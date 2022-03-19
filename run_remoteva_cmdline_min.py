@@ -17,6 +17,7 @@ with open('options.json', 'r', encoding="utf-8") as f:
 saved_options = json.loads(s)
 
 ttsFormat = saved_options["ttsFormat"] # "none" (TTS on server) or "saytxt" (text on client)
+ttsFormatList = ttsFormat.split(",")
 if ttsFormat == "saywav": ttsFormat = "saytxt" # saywav не поддерживается
 baseUrl = saved_options["baseUrl"] # server with Irene WEB api
 
@@ -37,7 +38,8 @@ if __name__ == "__main__":
                     if r.body != "":
                         res = json.loads(r.body)
                         if res != None and res != "": # there is some response to play
-                            print("ОТВЕТ: "+res)
+                            if "restxt" in res.keys():
+                                print("ОТВЕТ: "+res["restxt"])
                 else:
                     print("Ошибка: статус не 200")
             except Exception as e:
