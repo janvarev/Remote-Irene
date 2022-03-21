@@ -1,6 +1,6 @@
 {
-    "adminChats": [
-    ],
+    "adminChats": [ ],
     "allowAddAdmins": false,
+    "voiceMsgProcessor": "none",
     "botKey": ""
 }
