@@ -112,7 +112,9 @@ requests
 Потребуется отредактировать опцию vosk, настроив источник на вашу Python-установку 
 (чтобы скопировать библиотеку, без неё не заработает)
 
-[Скачать собранную версию 1.2 в EXE](https://download.janvarev.ru/vairene/run_remoteva_vosk12.rar) (для версий Ирины 4.1 и выше)
+## Compiled
+
+[Скачать собранную версию run_remoteva_vosk 1.2 в EXE](https://download.janvarev.ru/vairene/run_remoteva_vosk12.rar) (для версий Ирины 4.1 и выше)
 
 [Скачать собранную версию 1.1 в EXE](https://download.janvarev.ru/vairene/run_remoteva_vosk11.rar) 
 
