@@ -1,10 +1,11 @@
 import telebot
+from telebot import types # для указание типов
 import json
 import random
 import time
 import requests
 
-version = "1.1"
+version = "1.2"
 
 # options
 with open('options.json', 'r', encoding="utf-8") as f:
@@ -121,7 +122,7 @@ def get_text_messages(message):
     if message.chat.id in options_tele["adminChats"]:
         if message.text == "/runrecognized":
             send_cmd_towebapi(latestRec,message)
-        elif message.text == "/playwav":
+        elif message.text == "/playwav" or message.text == "Проиграть WAV":
             play_wav.play_wav("temp_voice.wav")
             bot.send_message(message.chat.id, "Сообщение проиграно")
         else:
@@ -211,7 +212,16 @@ def voice_processing(message):
                     global latestRec
                     latestRec = voice_inp_str
                     #send_cmd_towebapi(voice_inp_str,message)
-                    bot.send_message(message.chat.id, "Распознано: "+latestRec+". Нажмите /runrecognized или /playwav")
+
+                    # старый вариант сообщения
+                    #bot.send_message(message.chat.id, "Распознано: "+latestRec+". Нажмите /runrecognized или <a href=\"/playwav\">проиграть WAV</a>", parse_mode="HTML")
+
+                    # новый вариант с клавиатурой
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                    btn1 = types.KeyboardButton(latestRec.capitalize())
+                    btn2 = types.KeyboardButton("Проиграть WAV")
+                    markup.add(btn1, btn2)
+                    bot.send_message(message.chat.id, "Распознано: "+latestRec+".",reply_markup=markup)
             else:
                 bot.send_message(message.chat.id, "Распознавание голосовых файлов (VOSK) не работает")
 
