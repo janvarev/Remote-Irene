@@ -10,7 +10,7 @@ import json
 
 import play_wav
 
-version="1.2"
+version="1.3"
 
 # main options
 with open('options.json', 'r', encoding="utf-8") as f:

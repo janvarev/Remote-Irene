@@ -11,6 +11,7 @@
 1. Для быстрой установки всех требуемых зависимостей можно воспользоваться командой:
 ```pip install -r requirements.txt```
 (pyTelegramBotAPI нужен только для телеграм-клиента)
+(Для Linux и macOS - предварительно установите пакеты для [audioplayer](https://pypi.org/project/audioplayer/))
 
 2. Запустите сервер Ирины
 
@@ -113,6 +114,8 @@ requests
 (чтобы скопировать библиотеку, без неё не заработает)
 
 ## Compiled
+
+[Скачать собранную версию run_remoteva_vosk 1.3 в EXE](https://download.janvarev.ru/vairene/run_remoteva_vosk13.rar) (с фиксом для корректного проигрывания wav-файлов без съедания окончаний)
 
 [Скачать собранную версию run_remoteva_vosk 1.2 в EXE](https://download.janvarev.ru/vairene/run_remoteva_vosk12.rar) (для версий Ирины 4.1 и выше)
 
