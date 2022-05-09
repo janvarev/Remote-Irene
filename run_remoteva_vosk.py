@@ -155,7 +155,9 @@ if __name__ == "__main__":
 
                                         if "saywav" in ttsFormatList:
                                             play_wav.saywav_to_file(res,'tmpfile.wav')
+                                            mic_blocked = True
                                             play_wav.play_wav('tmpfile.wav')
+                                            mic_blocked = False
 
                         except requests.ConnectionError as e:
                             play_wav.play_wav('error_connection.wav')
