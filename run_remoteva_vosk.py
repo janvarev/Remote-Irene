@@ -10,7 +10,7 @@ import json
 
 import play_wav
 
-version="1.3"
+version="1.4"
 
 # main options
 with open('options.json', 'r', encoding="utf-8") as f:
@@ -153,6 +153,7 @@ if __name__ == "__main__":
                                                 ttsEngine.say(res["restxt"])
                                                 ttsEngine.runAndWait()
 
+
                                         if "saywav" in ttsFormatList:
                                             play_wav.saywav_to_file(res,'tmpfile.wav')
                                             mic_blocked = True
@@ -161,6 +162,10 @@ if __name__ == "__main__":
                                             except Exception as e:
                                                 print("Can't play received WAV")
                                             mic_blocked = False
+                                            #requests.get(baseUrl+"replyWasGiven", params={})
+
+                                        if "saytxt" in ttsFormatList or "saywav" in ttsFormatList:
+                                            requests.get(baseUrl+"replyWasGiven", params={})
 
                         except requests.ConnectionError as e:
                             play_wav.play_wav('error_connection.wav')
