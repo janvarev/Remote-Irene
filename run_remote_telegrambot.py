@@ -5,7 +5,8 @@ import random
 import time
 import requests
 
-version = "1.2"
+
+version = "1.3"
 
 # options
 with open('options.json', 'r', encoding="utf-8") as f:
@@ -15,17 +16,24 @@ saved_options = json.loads(s)
 
 ttsFormat = saved_options["ttsFormat"] # "none" (TTS on server) or "saytxt" (TTS on client)
 # or "saywav" (TTS on server to WAV, Wav played on client)
+
+ttsFormat = "saytxt" # for Telegram logic is only saytxt needed
 ttsFormatList = ttsFormat.split(",")
-if not "saytxt" in ttsFormatList: # saytxt обязателен
-    ttsFormatList.append("saytxt")
-    ttsFormat += ",saytxt"
 
 baseUrl = saved_options["baseUrl"] # server with Irene WEB api
 
-with open('options_telegrambot.json', 'r', encoding="utf-8") as f:
-    s = f.read(10000000)
-    f.close()
-options_tele = json.loads(s)
+from jaa import load_options
+
+default_options = {
+    "adminChats": [],
+    "allowAddAdmins": False,
+    "voiceMsgProcessor": "none",
+    "botKey": "",
+    "menu": "привет,погода",
+    "imageProcessor": "showDefaultApp",
+
+}
+options_tele = load_options(options_file='options_telegrambot.json',default_options=default_options)
 
 def save_options_tele(new_options_tele):
     options_tele = new_options_tele
@@ -101,11 +109,24 @@ def send_cmd_towebapi(cmd,message):
                     if res != None and res != "": # there is some response to play
                         if "saytxt" in ttsFormatList:
                             if "restxt" in res.keys():
-                                bot.send_message(message.chat.id, res["restxt"])
+                                markup = types.ReplyKeyboardRemove()
+                                restxt = str(res["restxt"])
+                                if restxt.endswith("Да или нет?"):
+                                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                                    btn1 = types.KeyboardButton("Да")
+                                    btn2 = types.KeyboardButton("Нет")
+                                    markup.add(btn1, btn2)
+
+                                bot.send_message(message.chat.id, res["restxt"],reply_markup=markup)
                                 processed = True
+
+                                # отправка, что сообщение проиграно
+                                requests.get(baseUrl+"replyWasGiven", params={})
 
             if not processed:
                 bot.send_message(message.chat.id, "Не распознано / нет ответа")
+
+
 
         except requests.ConnectionError as e:
             bot.send_message(message.chat.id, "Ошибка связи с Web api")
@@ -116,6 +137,27 @@ def send_cmd_towebapi(cmd,message):
         #print("2",rec.PartialResult())
         pass
 
+@bot.message_handler(content_types=['photo'])
+def get_image_messages(message):
+    if message.chat.id in options_tele["adminChats"]:
+        if options_tele["imageProcessor"] == "showDefaultApp":
+            file_info = bot.get_file(message.photo[-1].file_id)
+            downloaded_file = bot.download_file(file_info.file_path)
+
+            with open('temp_photo.jpg', 'wb') as new_file:
+                new_file.write(downloaded_file)
+
+            import os
+            filepath = os.path.dirname(__file__)+"/temp_photo.jpg"
+
+            import subprocess, os, platform
+            if platform.system() == 'Darwin':       # macOS
+                subprocess.call(('open', filepath))
+            elif platform.system() == 'Windows':    # Windows
+                os.startfile(filepath)
+            else:                                   # linux variants
+                subprocess.call(('xdg-open', filepath))
+
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
@@ -124,7 +166,14 @@ def get_text_messages(message):
             send_cmd_towebapi(latestRec,message)
         elif message.text == "/playwav" or message.text == "Проиграть WAV":
             play_wav.play_wav("temp_voice.wav")
-            bot.send_message(message.chat.id, "Сообщение проиграно")
+            bot.send_message(message.chat.id, "Сообщение проиграно", reply_markup=types.ReplyKeyboardRemove())
+        elif message.text.lower() == "m" or message.text.lower() == "м" or message.text == "/":
+            ar_menu = str(options_tele["menu"]).split(",")
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            for el in ar_menu:
+                markup.add(types.KeyboardButton(el))
+            #menu_cmds = types.MenuButtonCommands()
+            bot.send_message(message.chat.id, "Типовые команды", reply_markup=markup)
         else:
             send_cmd_towebapi(message.text.lower(),message)
     else:
