@@ -8,8 +8,6 @@ import sys
 import requests
 import json
 
-import play_wav
-
 version="1.0"
 
 # main options
